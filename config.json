@@ -39,5 +39,33 @@
   "dry_run": false,
   "create_backup": true,
   "ask_confirmation": true,
-  "log_level": "DEBUG"
+  "log_level": "DEBUG",
+  "grid_layout": {
+    "enabled": false,
+    "grid_size": {
+      "width": 100,
+      "height": 100
+    },
+    "start_position": {
+      "x": 50,
+      "y": 50
+    },
+    "max_columns": 8,
+    "category_spacing": {
+      "x": 200,
+      "y": 150
+    },
+    "layout_style": "by_category",
+    "category_order": [
+      "Computer System",
+      "Gaming Tools", 
+      "Games",
+      "Coding Tools",
+      "Hacking Tools",
+      "Media Tools",
+      "Work Tools",
+      "Folders",
+      "Other"
+    ]
+  }
 }
