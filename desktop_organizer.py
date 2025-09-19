@@ -21,7 +21,9 @@ class DesktopOrganizer:
     
     def __init__(self, config_path: Optional[str] = None):
         """Initialize the desktop organizer"""
-        self.desktop_path = Path.home() / "Desktop"
+        self.user_desktop_path = Path.home() / "Desktop"
+        self.public_desktop_path = Path("C:/Users/Public/Desktop")
+        self.desktop_paths = [self.user_desktop_path, self.public_desktop_path]
         self.config_path = config_path or "config.json"
         self.backup_dir = Path("backups")
         self.config = self._load_config()
@@ -138,23 +140,35 @@ class DesktopOrganizer:
         return None
     
     def scan_desktop(self) -> List[Path]:
-        """Scan desktop and return list of files and folders"""
-        if not self.desktop_path.exists():
-            raise FileNotFoundError(f"Desktop path not found: {self.desktop_path}")
-        
+        """Scan desktop and return list of files and folders from both user and public desktops"""
         items = []
-        for item in self.desktop_path.iterdir():
-            if item.name in self.config["ignore_files"]:
-                continue
-            items.append(item)
         
-        self.logger.info(f"Found {len(items)} items on desktop")
+        for desktop_path in self.desktop_paths:
+            if not desktop_path.exists():
+                self.logger.warning(f"Desktop path not found: {desktop_path}")
+                continue
+                
+            self.logger.info(f"Scanning desktop: {desktop_path}")
+            for item in desktop_path.iterdir():
+                if item.name in self.config["ignore_files"]:
+                    continue
+                # Skip folders that are our own organization folders
+                if item.is_dir() and item.name in self.config["categories"].keys():
+                    continue
+                items.append(item)
+        
+        self.logger.info(f"Found {len(items)} items total across all desktop locations")
         return items
     
     def classify_item(self, item_path: Path) -> str:
         """Classify an item by its purpose/type"""
         if item_path.is_dir():
-            return self._classify_folder(item_path)
+            category = self._classify_folder(item_path)
+            # Prevent same-named folder nesting (e.g., don't put 'Games' folder inside 'Games' folder)
+            if item_path.name == category:
+                self.logger.debug(f"Preventing same-name nesting: {item_path.name} would go to {category}, using 'Folders' instead")
+                return 'Folders'
+            return category
         else:
             return self._classify_file(item_path)
     
@@ -328,19 +342,26 @@ class DesktopOrganizer:
         return backup_path
     
     def create_category_folders(self, categories: Set[str]):
-        """Create folders for each category on the desktop"""
+        """Create folders for each category on the user desktop"""
         for category in categories:
-            category_path = self.desktop_path / category
+            category_path = self.user_desktop_path / category
             if not category_path.exists():
                 try:
                     category_path.mkdir()
                     self.logger.info(f"Created folder: {category}")
                 except OSError as e:
                     self.logger.error(f"Could not create folder {category}: {e}")
+            else:
+                self.logger.info(f"Using existing folder: {category}")
     
     def move_item(self, item_path: Path, category: str) -> bool:
-        """Move an item to its category folder"""
-        destination_folder = self.desktop_path / category
+        """Move an item to its category folder on the user desktop"""
+        # Check if source item still exists
+        if not item_path.exists():
+            self.logger.warning(f"Source item no longer exists: {item_path.name}")
+            return False
+            
+        destination_folder = self.user_desktop_path / category
         destination_path = destination_folder / item_path.name
         
         # Handle name conflicts
@@ -415,10 +436,20 @@ class DesktopOrganizer:
         self.create_category_folders(categories_needed)
         
         # Move items to their categories
+        # Process files first, then folders to avoid path conflicts
         success_count = 0
+        
+        # First pass: move files
         for item, category in classifications.items():
-            if self.move_item(item, category):
-                success_count += 1
+            if not item.is_dir():
+                if self.move_item(item, category):
+                    success_count += 1
+        
+        # Second pass: move folders
+        for item, category in classifications.items():
+            if item.is_dir():
+                if self.move_item(item, category):
+                    success_count += 1
         
         # Summary
         action = "Would organize" if self.config["dry_run"] else "Organized"

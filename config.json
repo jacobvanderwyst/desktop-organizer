@@ -2,19 +2,19 @@
   "categories": {
     "Computer System": {
       "extensions": [".exe", ".msi", ".lnk"],
-      "keywords": ["windows", "system", "control", "panel", "settings", "task", "manager", "registry", "cmd", "powershell", "explorer", "notepad", "calculator", "paint", "wordpad", "defender", "firewall", "disk", "cleanup", "defrag", "device", "printer", "network", "wifi"]
+      "keywords": ["windows", "system", "control", "panel", "settings", "task", "manager", "registry", "cmd", "powershell", "explorer", "notepad", "calculator", "paint", "wordpad", "defender", "firewall", "disk", "cleanup", "defrag", "device", "printer", "network", "wifi", "nvidia", "app", "acrobat", "ghub", "logitech", "nordvpn", "vpn", "gcc", "compiler", "teamviewer", "remote"]
     },
     "Gaming Tools": {
       "extensions": [".exe", ".msi", ".lnk"],
-      "keywords": ["beam", "eyetracker", "obs", "r6", "tracker", "ghub", "logitech", "gaming", "overlay", "recorder", "stream", "streaming", "razer", "synapse", "corsair", "icue", "msi", "afterburner", "nvidia", "geforce", "amd", "radeon", "discord", "teamspeak", "ventrilo", "mumble", "xbox", "gamepad", "controller", "overwolf"]
+      "keywords": ["beam", "eyetracker", "obs", "studio", "r6", "tracker", "trackir", "ghub", "logitech", "gaming", "overlay", "recorder", "stream", "streaming", "deck", "razer", "synapse", "corsair", "icue", "msi", "afterburner", "nvidia", "app", "geforce", "amd", "radeon", "discord", "teamspeak", "ventrilo", "mumble", "xbox", "gamepad", "controller", "overwolf", "gyazo", "replay", "video"]
     },
     "Games": {
       "extensions": [".exe", ".lnk"],
-      "keywords": ["game", "games", "steam", "epic", "uplay", "ubisoft", "connect", "origin", "battle", "net", "battlenet", "gog", "galaxy", "minecraft", "league", "legends", "valorant", "csgo", "dota", "overwatch", "fortnite", "apex", "pubg", "wow", "warcraft", "diablo", "starcraft", "hearthstone", "rainbow", "six", "siege", "rocket", "among", "fall", "guys", "combat", "skies", "unknown", "madden", "nfl", "infinity", "battlescape", "kerbal", "space", "program", "operation", "harsh", "doorstop", "warships", "wallpaper", "engine", "x360ce"]
+      "keywords": ["game", "games", "steam", "epic", "uplay", "ubisoft", "connect", "origin", "battle", "net", "battlenet", "battlestate", "launcher", "gog", "galaxy", "minecraft", "league", "legends", "valorant", "csgo", "dota", "overwatch", "fortnite", "apex", "pubg", "wow", "warcraft", "diablo", "starcraft", "hearthstone", "rainbow", "six", "siege", "rocket", "among", "fall", "guys", "combat", "skies", "unknown", "madden", "nfl", "infinity", "battlescape", "kerbal", "space", "program", "operation", "harsh", "doorstop", "warships", "wallpaper", "engine", "x360ce", "ea"]
     },
     "Coding Tools": {
       "extensions": [".exe", ".msi", ".lnk"],
-      "keywords": ["vscode", "visual", "studio", "code", "docker", "git", "github", "node", "npm", "python", "java", "intellij", "pycharm", "webstorm", "sublime", "atom", "vim", "emacs", "terminal", "bash", "zsh", "anaconda", "jupyter", "postman", "insomnia", "mysql", "postgresql", "mongodb", "redis", "xampp", "wamp", "mamp"]
+      "keywords": ["vscode", "visual", "studio", "code", "docker", "git", "github", "node", "npm", "python", "java", "intellij", "pycharm", "webstorm", "sublime", "atom", "vim", "emacs", "terminal", "bash", "zsh", "anaconda", "jupyter", "postman", "insomnia", "mysql", "postgresql", "mongodb", "redis", "xampp", "wamp", "mamp", "gcc", "cygwin", "connect", "ce"]
     },
     "Hacking Tools": {
       "extensions": [".exe", ".msi", ".lnk"],
@@ -22,7 +22,11 @@
     },
     "Media Tools": {
       "extensions": [".exe", ".msi", ".lnk"],
-      "keywords": ["acrobat", "adobe", "claude", "spotify", "medal", "vlc", "media", "player", "chrome", "firefox", "edge", "safari", "brave", "photoshop", "illustrator", "premiere", "after", "effects", "audacity", "gimp", "blender", "handbrake", "ffmpeg", "youtube", "netflix", "twitch", "zoom", "workplace", "teams", "slack", "skype", "whatsapp", "telegram", "signal", "joplin", "warp"]
+      "keywords": ["acrobat", "adobe", "claude", "spotify", "medal", "vlc", "media", "player", "chrome", "google", "firefox", "edge", "microsoft", "safari", "brave", "photoshop", "illustrator", "premiere", "after", "effects", "audacity", "gimp", "blender", "handbrake", "ffmpeg", "youtube", "netflix", "twitch", "zoom", "workplace", "teams", "slack", "skype", "whatsapp", "telegram", "signal", "joplin", "warp"]
+    },
+    "Work Tools": {
+      "extensions": [".exe", ".msi", ".lnk"],
+      "keywords": ["lockdown", "browser", "omnissa", "horizon", "client", "jabber", "cisco", "teamviewer", "nordvpn", "nord", "vpn", "virtualbox", "oracle", "vm", "workspace", "respondus", "webex", "meeting", "office", "365", "outlook", "word", "excel", "powerpoint", "onenote", "sharepoint", "onedrive", "business", "enterprise", "corporate"]
     }
   },
   "ignore_files": [
@@ -32,7 +36,7 @@
     ".localized",
     "Icon\r"
   ],
-  "dry_run": true,
+  "dry_run": false,
   "create_backup": true,
   "ask_confirmation": true,
   "log_level": "DEBUG"
