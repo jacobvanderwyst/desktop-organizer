@@ -14,6 +14,7 @@ from typing import Dict, List, Set, Optional
 import mimetypes
 import urllib.request
 import re
+import struct
 
 class DesktopOrganizer:
     """Main class for organizing desktop items by purpose"""
@@ -89,9 +90,10 @@ class DesktopOrganizer:
     
     def _setup_logging(self):
         """Setup logging configuration"""
+        log_level = getattr(logging, self.config.get('log_level', 'INFO').upper())
         log_format = '%(asctime)s - %(levelname)s - %(message)s'
         logging.basicConfig(
-            level=logging.INFO,
+            level=log_level,
             format=log_format,
             handlers=[
                 logging.FileHandler('desktop_organizer.log'),
@@ -99,6 +101,41 @@ class DesktopOrganizer:
             ]
         )
         self.logger = logging.getLogger(__name__)
+    
+    def _get_shortcut_target(self, shortcut_path: Path) -> Optional[str]:
+        """Get the target of a Windows shortcut file (.lnk)"""
+        try:
+            # Try using win32com if available
+            try:
+                import win32com.client
+                shell = win32com.client.Dispatch("WScript.Shell")
+                shortcut = shell.CreateShortCut(str(shortcut_path))
+                return shortcut.Targetpath
+            except ImportError:
+                # Fallback: Basic parsing of .lnk file
+                with open(shortcut_path, 'rb') as f:
+                    content = f.read()
+                    # Look for strings that might be the target path
+                    # This is a simplified approach
+                    strings = []
+                    current_string = b''
+                    for byte in content:
+                        if 32 <= byte <= 126:  # Printable ASCII
+                            current_string += bytes([byte])
+                        else:
+                            if len(current_string) > 10:
+                                strings.append(current_string.decode('ascii', errors='ignore'))
+                            current_string = b''
+                    
+                    # Look for executable paths
+                    for s in strings:
+                        if '.exe' in s.lower() and ('\\' in s or '/' in s):
+                            return s
+                            
+        except Exception as e:
+            self.logger.debug(f"Could not read shortcut {shortcut_path.name}: {e}")
+            return None
+        return None
     
     def scan_desktop(self) -> List[Path]:
         """Scan desktop and return list of files and folders"""
@@ -126,34 +163,110 @@ class DesktopOrganizer:
         file_extension = file_path.suffix.lower()
         file_name = file_path.stem.lower()
         
-        # First check by file extension
+        # Handle Windows shortcuts specially
+        if file_extension == '.lnk':
+            return self._classify_shortcut(file_path)
+        
+        # First check by file extension (but be more flexible for common extensions)
         for category, rules in self.config["categories"].items():
             if file_extension in rules["extensions"]:
-                self.logger.debug(f"Classified {file_path.name} as {category} by extension")
-                return category
+                # For common extensions like .exe, also check keywords
+                if file_extension in ['.exe', '.msi']:
+                    # Check if filename contains category keywords
+                    for keyword in rules["keywords"]:
+                        if keyword in file_name:
+                            self.logger.debug(f"Classified {file_path.name} as {category} by extension + keyword '{keyword}'")
+                            return category
+                else:
+                    self.logger.debug(f"Classified {file_path.name} as {category} by extension")
+                    return category
         
-        # Then check by keywords in filename
+        # Then check by keywords in filename (more thorough)
+        best_match = None
+        best_score = 0
+        
         for category, rules in self.config["categories"].items():
+            score = 0
+            matched_keywords = []
+            
             for keyword in rules["keywords"]:
                 if keyword in file_name:
-                    self.logger.debug(f"Classified {file_path.name} as {category} by keyword '{keyword}'")
-                    return category
+                    score += 1
+                    matched_keywords.append(keyword)
+                    
+                    # Give bonus for exact matches or matches at word boundaries
+                    if keyword == file_name or (keyword + ' ') in file_name or (' ' + keyword) in file_name:
+                        score += 0.5
+            
+            if score > best_score:
+                best_score = score
+                best_match = category
+                self.logger.debug(f"Better match for {file_path.name}: {category} (score: {score}, keywords: {matched_keywords})")
+        
+        if best_match and best_score > 0:
+            self.logger.debug(f"Classified {file_path.name} as {best_match} by keyword matching (score: {best_score})")
+            return best_match
         
         # Try to classify by MIME type as fallback
         mime_type, _ = mimetypes.guess_type(str(file_path))
         if mime_type:
             main_type = mime_type.split('/')[0]
             if main_type == 'image':
-                return 'Images'
+                return 'Media Tools'  # Images go to media tools now
             elif main_type == 'video':
-                return 'Videos'
+                return 'Media Tools'
             elif main_type == 'audio':
-                return 'Audio'
+                return 'Media Tools'
             elif main_type == 'text':
-                return 'Documents'
+                return 'Coding Tools'  # Text files might be code
         
         # Default category for unclassified items
         self.logger.debug(f"Could not classify {file_path.name}, using 'Other'")
+        return 'Other'
+    
+    def _classify_shortcut(self, shortcut_path: Path) -> str:
+        """Classify a Windows shortcut by its name and target"""
+        shortcut_name = shortcut_path.stem.lower()
+        
+        # Get the shortcut target if possible
+        target = self._get_shortcut_target(shortcut_path)
+        if target:
+            target_name = Path(target).stem.lower()
+            # Combine shortcut name and target name for classification
+            combined_name = f"{shortcut_name} {target_name}"
+        else:
+            combined_name = shortcut_name
+        
+        self.logger.debug(f"Classifying shortcut {shortcut_path.name} (combined name: '{combined_name}')")
+        
+        # Check keywords against combined name
+        best_match = None
+        best_score = 0
+        
+        for category, rules in self.config["categories"].items():
+            score = 0
+            matched_keywords = []
+            
+            for keyword in rules["keywords"]:
+                if keyword in combined_name:
+                    score += 1
+                    matched_keywords.append(keyword)
+                    
+                    # Give bonus for exact matches
+                    if keyword == shortcut_name or keyword in shortcut_name.split():
+                        score += 0.5
+            
+            if score > best_score:
+                best_score = score
+                best_match = category
+                self.logger.debug(f"Better shortcut match for {shortcut_path.name}: {category} (score: {score}, keywords: {matched_keywords})")
+        
+        if best_match and best_score > 0:
+            self.logger.debug(f"Classified shortcut {shortcut_path.name} as {best_match} by keyword matching (score: {best_score})")
+            return best_match
+        
+        # Default for unclassified shortcuts
+        self.logger.debug(f"Could not classify shortcut {shortcut_path.name}, using 'Other'")
         return 'Other'
     
     def _classify_folder(self, folder_path: Path) -> str:

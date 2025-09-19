@@ -1,52 +1,28 @@
 {
   "categories": {
-    "Documents": {
-      "extensions": [".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt", ".pages"],
-      "keywords": ["document", "paper", "report", "manual", "guide", "readme"]
+    "Computer System": {
+      "extensions": [".exe", ".msi", ".lnk"],
+      "keywords": ["windows", "system", "control", "panel", "settings", "task", "manager", "registry", "cmd", "powershell", "explorer", "notepad", "calculator", "paint", "wordpad", "defender", "firewall", "disk", "cleanup", "defrag", "device", "printer", "network", "wifi"]
     },
-    "Images": {
-      "extensions": [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg", ".webp", ".ico"],
-      "keywords": ["photo", "image", "picture", "screenshot", "wallpaper"]
+    "Gaming Tools": {
+      "extensions": [".exe", ".msi", ".lnk"],
+      "keywords": ["beam", "eyetracker", "obs", "r6", "tracker", "ghub", "logitech", "gaming", "overlay", "recorder", "stream", "streaming", "razer", "synapse", "corsair", "icue", "msi", "afterburner", "nvidia", "geforce", "amd", "radeon", "discord", "teamspeak", "ventrilo", "mumble", "xbox", "gamepad", "controller", "overwolf"]
     },
-    "Videos": {
-      "extensions": [".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv", ".webm", ".m4v"],
-      "keywords": ["video", "movie", "clip", "film"]
+    "Games": {
+      "extensions": [".exe", ".lnk"],
+      "keywords": ["game", "games", "steam", "epic", "uplay", "ubisoft", "connect", "origin", "battle", "net", "battlenet", "gog", "galaxy", "minecraft", "league", "legends", "valorant", "csgo", "dota", "overwatch", "fortnite", "apex", "pubg", "wow", "warcraft", "diablo", "starcraft", "hearthstone", "rainbow", "six", "siege", "rocket", "among", "fall", "guys", "combat", "skies", "unknown", "madden", "nfl", "infinity", "battlescape", "kerbal", "space", "program", "operation", "harsh", "doorstop", "warships", "wallpaper", "engine", "x360ce"]
     },
-    "Audio": {
-      "extensions": [".mp3", ".wav", ".flac", ".aac", ".ogg", ".m4a", ".wma"],
-      "keywords": ["music", "audio", "sound", "podcast"]
+    "Coding Tools": {
+      "extensions": [".exe", ".msi", ".lnk"],
+      "keywords": ["vscode", "visual", "studio", "code", "docker", "git", "github", "node", "npm", "python", "java", "intellij", "pycharm", "webstorm", "sublime", "atom", "vim", "emacs", "terminal", "bash", "zsh", "anaconda", "jupyter", "postman", "insomnia", "mysql", "postgresql", "mongodb", "redis", "xampp", "wamp", "mamp"]
     },
-    "Archives": {
-      "extensions": [".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz"],
-      "keywords": ["archive", "backup", "compressed", "package"]
+    "Hacking Tools": {
+      "extensions": [".exe", ".msi", ".lnk"],
+      "keywords": ["nmap", "zenmap", "wireshark", "metasploit", "kali", "burp", "suite", "owasp", "zap", "sqlmap", "john", "ripper", "hashcat", "aircrack", "hydra", "nikto", "nessus", "openvas", "maltego", "autopsy", "volatility", "ghidra", "ida", "ollydbg", "x64dbg", "cheat", "process", "hacker", "hex", "editor", "010", "hxd"]
     },
-    "Applications": {
-      "extensions": [".exe", ".msi", ".dmg", ".app", ".deb", ".rpm"],
-      "keywords": ["installer", "setup", "application", "software"]
-    },
-    "Spreadsheets": {
-      "extensions": [".xls", ".xlsx", ".csv", ".ods", ".numbers"],
-      "keywords": ["spreadsheet", "data", "excel", "sheet"]
-    },
-    "Presentations": {
-      "extensions": [".ppt", ".pptx", ".odp", ".key"],
-      "keywords": ["presentation", "slides", "powerpoint", "keynote"]
-    },
-    "Code": {
-      "extensions": [".py", ".js", ".html", ".css", ".java", ".cpp", ".c", ".php", ".rb", ".go", ".rs", ".ts"],
-      "keywords": ["code", "script", "program", "source", "project"]
-    },
-    "Design": {
-      "extensions": [".psd", ".ai", ".sketch", ".figma", ".xd"],
-      "keywords": ["design", "mockup", "prototype", "ui", "graphics"]
-    },
-    "Ebooks": {
-      "extensions": [".epub", ".mobi", ".azw", ".azw3"],
-      "keywords": ["book", "ebook", "novel", "manual"]
-    },
-    "Fonts": {
-      "extensions": [".ttf", ".otf", ".woff", ".woff2"],
-      "keywords": ["font", "typeface"]
+    "Media Tools": {
+      "extensions": [".exe", ".msi", ".lnk"],
+      "keywords": ["acrobat", "adobe", "claude", "spotify", "medal", "vlc", "media", "player", "chrome", "firefox", "edge", "safari", "brave", "photoshop", "illustrator", "premiere", "after", "effects", "audacity", "gimp", "blender", "handbrake", "ffmpeg", "youtube", "netflix", "twitch", "zoom", "workplace", "teams", "slack", "skype", "whatsapp", "telegram", "signal", "joplin", "warp"]
     }
   },
   "ignore_files": [
@@ -59,5 +35,5 @@
   "dry_run": true,
   "create_backup": true,
   "ask_confirmation": true,
-  "log_level": "INFO"
+  "log_level": "DEBUG"
 }
