@@ -444,8 +444,70 @@ class DesktopOrganizer:
         self.logger.debug(f"Could not classify folder {folder_path.name}, using 'Folders'")
         return 'Folders'
     
-    def calculate_adaptive_grid_position(self, category: str, item_index_in_category: int) -> Tuple[int, int]:
-        """Calculate grid position adaptively based on monitor dimensions"""
+    def _calculate_folder_safe_position(self, monitor_width: int, monitor_height: int) -> Tuple[int, int]:
+        """Calculate a safe position for folders when folder positioning is disabled"""
+        # Place in bottom-right corner by default
+        margin = int(monitor_width * 0.02)
+        return (monitor_width - 200 - margin, monitor_height - 100 - margin)
+    
+    def _calculate_alignment_positions(self, alignment: str, monitor_width: int, monitor_height: int, 
+                                     usable_width: int, usable_height: int, margin: int, 
+                                     categories_per_row: int, grid_width: int, grid_height: int) -> Tuple[int, int, int, int]:
+        """Calculate start positions and spacing based on alignment preset"""
+        
+        if alignment == "left":
+            start_x = margin
+            start_y = margin
+            category_spacing_x = grid_width * 3  # Tight horizontal spacing
+            category_spacing_y = int(usable_height / 3)
+        
+        elif alignment == "right":
+            # Align to right side
+            total_width_needed = (categories_per_row * grid_width * 3)
+            start_x = monitor_width - total_width_needed - margin
+            start_y = margin  
+            category_spacing_x = grid_width * 3
+            category_spacing_y = int(usable_height / 3)
+        
+        elif alignment == "top":
+            start_x = margin
+            start_y = margin
+            category_spacing_x = int(monitor_width / categories_per_row) - margin
+            category_spacing_y = grid_height * 2  # Tight vertical spacing
+        
+        elif alignment == "bottom":
+            start_x = margin
+            total_height_needed = grid_height * 6  # Estimate for 3 rows
+            start_y = usable_height - total_height_needed
+            category_spacing_x = int(monitor_width / categories_per_row) - margin
+            category_spacing_y = grid_height * 2
+        
+        elif alignment == "center":
+            # Center everything on screen
+            total_width = (categories_per_row * grid_width * 3)
+            total_height = grid_height * 6
+            start_x = (monitor_width - total_width) // 2
+            start_y = (usable_height - total_height) // 2
+            category_spacing_x = grid_width * 3
+            category_spacing_y = grid_height * 2
+        
+        elif alignment == "corners":
+            # Distribute categories in corners - will be handled specially in main positioning
+            start_x = margin
+            start_y = margin
+            category_spacing_x = monitor_width // 2
+            category_spacing_y = usable_height // 2
+        
+        else:  # adaptive (default)
+            start_x = margin
+            start_y = margin
+            category_spacing_x = int(monitor_width / categories_per_row) - margin
+            category_spacing_y = int(usable_height / 3) - margin
+        
+        return (start_x, start_y, category_spacing_x, category_spacing_y)
+    
+    def calculate_adaptive_grid_position(self, category: str, item_index_in_category: int, is_folder: bool = False) -> Tuple[int, int]:
+        """Calculate grid position adaptively based on monitor dimensions and alignment settings"""
         if not self.positioner:
             return (50, 50)  # Fallback position
         
@@ -455,9 +517,14 @@ class DesktopOrganizer:
         
         grid_config = self.config.get("grid_layout", {})
         category_order = grid_config.get("category_order", [])
+        alignment = grid_config.get("alignment", "adaptive")
+        include_folders = grid_config.get("include_folders", True)
+        
+        # Skip folder positioning if disabled
+        if is_folder and not include_folders:
+            return self._calculate_folder_safe_position(monitor_width, monitor_height)
         
         # Calculate adaptive dimensions based on screen size
-        # Use percentages of screen dimensions for better scaling
         icon_size = 72  # Standard Windows icon size
         margin = int(monitor_width * 0.02)  # 2% of screen width as margin
         
@@ -478,13 +545,11 @@ class DesktopOrganizer:
             max_columns = 12
             categories_per_row = 4
         
-        # Calculate usable area for icons (avoiding edges)
-        start_x = margin
-        start_y = margin
-        
-        # Category spacing based on screen size
-        category_spacing_x = int(monitor_width / categories_per_row) - margin
-        category_spacing_y = int(usable_height / 3) - margin  # Divide into 3 vertical sections
+        # Calculate base positions based on alignment preset
+        start_x, start_y, category_spacing_x, category_spacing_y = self._calculate_alignment_positions(
+            alignment, monitor_width, monitor_height, usable_width, usable_height, 
+            margin, categories_per_row, grid_width, grid_height
+        )
         
         # Get category index
         try:
@@ -540,11 +605,13 @@ class DesktopOrganizer:
             self.logger.debug(f"Positioning {len(items)} items in category: {category}")
             
             for index, item in enumerate(items):
-                x, y = self.calculate_adaptive_grid_position(category, index)
+                is_folder = item.is_dir()
+                x, y = self.calculate_adaptive_grid_position(category, index, is_folder)
                 
                 # For now, we'll use a simplified approach since finding icons by name is complex
                 # In practice, you'd need to implement proper icon enumeration
-                self.logger.debug(f"Would position {item.name} at ({x}, {y})")
+                folder_text = " (folder)" if is_folder else ""
+                self.logger.debug(f"Would position {item.name}{folder_text} at ({x}, {y})")
                 
                 # This is where you'd actually position the icon if we had the icon index
                 # icon_index = self.positioner.find_icon_by_name(item.name)
@@ -733,6 +800,10 @@ def main():
     parser.add_argument("--no-grid", action="store_true", help="Disable grid layout positioning")
     parser.add_argument("--grid-size", type=int, nargs=2, metavar=("WIDTH", "HEIGHT"), help="Set grid cell size (width height)")
     parser.add_argument("--grid-start", type=int, nargs=2, metavar=("X", "Y"), help="Set grid start position (x y)")
+    parser.add_argument("--align", choices=["adaptive", "left", "right", "top", "bottom", "center", "corners"], 
+                       help="Set grid alignment preset")
+    parser.add_argument("--include-folders", action="store_true", help="Include folders in grid positioning")
+    parser.add_argument("--no-folders", action="store_true", help="Exclude folders from grid positioning")
     
     args = parser.parse_args()
     
@@ -784,6 +855,24 @@ def main():
                 organizer.config["grid_layout"]["start_position"] = {}
             organizer.config["grid_layout"]["start_position"]["x"] = args.grid_start[0]
             organizer.config["grid_layout"]["start_position"]["y"] = args.grid_start[1]
+        
+        if args.align:
+            if "grid_layout" not in organizer.config:
+                organizer.config["grid_layout"] = {}
+            organizer.config["grid_layout"]["alignment"] = args.align
+            organizer.logger.info(f"Grid alignment set to: {args.align}")
+        
+        if args.include_folders:
+            if "grid_layout" not in organizer.config:
+                organizer.config["grid_layout"] = {}
+            organizer.config["grid_layout"]["include_folders"] = True
+            organizer.logger.info("Folder positioning enabled")
+        
+        if args.no_folders:
+            if "grid_layout" not in organizer.config:
+                organizer.config["grid_layout"] = {}
+            organizer.config["grid_layout"]["include_folders"] = False
+            organizer.logger.info("Folder positioning disabled")
         
         if args.list_only:
             items = organizer.scan_desktop()

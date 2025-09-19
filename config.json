@@ -56,6 +56,8 @@
       "y": 150
     },
     "layout_style": "by_category",
+    "alignment": "adaptive",
+    "include_folders": true,
     "category_order": [
       "Computer System",
       "Gaming Tools", 
@@ -66,6 +68,15 @@
       "Work Tools",
       "Folders",
       "Other"
-    ]
+    ],
+    "alignment_presets": {
+      "adaptive": "Auto-adjust based on monitor size and aspect ratio",
+      "left": "Align all items to the left side of the screen",
+      "right": "Align all items to the right side of the screen",
+      "top": "Align all items to the top of the screen",
+      "bottom": "Align all items to the bottom of the screen",
+      "center": "Center all items on the screen",
+      "corners": "Distribute categories in screen corners"
+    }
   }
 }
