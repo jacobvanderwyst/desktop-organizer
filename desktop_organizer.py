@@ -35,6 +35,21 @@ class WindowsDesktopPositioner:
         self.LVM_GETITEMCOUNT = 4100
         self.LVM_GETITEMTEXT = 4141
         
+        # Get monitor dimensions
+        self.monitor_width = self.user32.GetSystemMetrics(0)  # SM_CXSCREEN
+        self.monitor_height = self.user32.GetSystemMetrics(1)  # SM_CYSCREEN
+        
+    def get_monitor_info(self) -> Tuple[int, int]:
+        """Get primary monitor dimensions"""
+        return (self.monitor_width, self.monitor_height)
+    
+    def get_usable_desktop_area(self) -> Tuple[int, int, int, int]:
+        """Get usable desktop area (excluding taskbar)"""
+        # Get work area (desktop minus taskbar)
+        rect = wintypes.RECT()
+        self.user32.SystemParametersInfoW(48, 0, ctypes.byref(rect), 0)  # SPI_GETWORKAREA
+        return (rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
+        
     def get_desktop_window(self):
         """Get handle to the desktop ListView control"""
         progman = self.user32.FindWindowW("Progman", "Program Manager")
@@ -262,6 +277,9 @@ class DesktopOrganizer:
                 # Skip folders that are our own organization folders
                 if item.is_dir() and item.name in self.config["categories"].keys():
                     continue
+                # Also skip common organization folder names
+                if item.is_dir() and item.name in ["Folders", "Other"]:
+                    continue
                 items.append(item)
         
         self.logger.info(f"Found {len(items)} items total across all desktop locations")
@@ -426,18 +444,47 @@ class DesktopOrganizer:
         self.logger.debug(f"Could not classify folder {folder_path.name}, using 'Folders'")
         return 'Folders'
     
-    def calculate_grid_position(self, category: str, item_index_in_category: int) -> Tuple[int, int]:
-        """Calculate grid position for an item based on its category and index"""
-        grid_config = self.config.get("grid_layout", {})
+    def calculate_adaptive_grid_position(self, category: str, item_index_in_category: int) -> Tuple[int, int]:
+        """Calculate grid position adaptively based on monitor dimensions"""
+        if not self.positioner:
+            return (50, 50)  # Fallback position
         
-        grid_width = grid_config.get("grid_size", {}).get("width", 100)
-        grid_height = grid_config.get("grid_size", {}).get("height", 100)
-        start_x = grid_config.get("start_position", {}).get("x", 50)
-        start_y = grid_config.get("start_position", {}).get("y", 50)
-        max_columns = grid_config.get("max_columns", 8)
-        category_spacing_x = grid_config.get("category_spacing", {}).get("x", 200)
-        category_spacing_y = grid_config.get("category_spacing", {}).get("y", 150)
+        # Get monitor information
+        monitor_width, monitor_height = self.positioner.get_monitor_info()
+        usable_left, usable_top, usable_width, usable_height = self.positioner.get_usable_desktop_area()
+        
+        grid_config = self.config.get("grid_layout", {})
         category_order = grid_config.get("category_order", [])
+        
+        # Calculate adaptive dimensions based on screen size
+        # Use percentages of screen dimensions for better scaling
+        icon_size = 72  # Standard Windows icon size
+        margin = int(monitor_width * 0.02)  # 2% of screen width as margin
+        
+        # Adaptive grid sizing based on monitor resolution
+        if monitor_width <= 1920:  # 1080p and below
+            grid_width = int(monitor_width * 0.05)  # 5% of screen width
+            grid_height = int(monitor_height * 0.08)  # 8% of screen height
+            max_columns = 8
+            categories_per_row = 3
+        elif monitor_width <= 2560:  # 1440p
+            grid_width = int(monitor_width * 0.04)  # 4% of screen width
+            grid_height = int(monitor_height * 0.06)  # 6% of screen height
+            max_columns = 10
+            categories_per_row = 4
+        else:  # 4K and above
+            grid_width = int(monitor_width * 0.03)  # 3% of screen width
+            grid_height = int(monitor_height * 0.05)  # 5% of screen height
+            max_columns = 12
+            categories_per_row = 4
+        
+        # Calculate usable area for icons (avoiding edges)
+        start_x = margin
+        start_y = margin
+        
+        # Category spacing based on screen size
+        category_spacing_x = int(monitor_width / categories_per_row) - margin
+        category_spacing_y = int(usable_height / 3) - margin  # Divide into 3 vertical sections
         
         # Get category index
         try:
@@ -446,7 +493,6 @@ class DesktopOrganizer:
             category_index = len(category_order)  # Put unknown categories at the end
         
         # Calculate category grid position
-        categories_per_row = 3  # Arrange categories in rows of 3
         category_row = category_index // categories_per_row
         category_col = category_index % categories_per_row
         
@@ -461,6 +507,15 @@ class DesktopOrganizer:
         # Final position
         final_x = category_base_x + (item_col * grid_width)
         final_y = category_base_y + (item_row * grid_height)
+        
+        # Ensure positions stay within screen bounds
+        final_x = min(final_x, monitor_width - icon_size - margin)
+        final_y = min(final_y, usable_height - icon_size - margin)
+        final_x = max(final_x, margin)
+        final_y = max(final_y, margin)
+        
+        self.logger.debug(f"Monitor: {monitor_width}x{monitor_height}, Usable: {usable_width}x{usable_height}")
+        self.logger.debug(f"Adaptive grid: {grid_width}x{grid_height}, Category {category} item {item_index_in_category} -> ({final_x}, {final_y})")
         
         return (final_x, final_y)
     
@@ -479,13 +534,13 @@ class DesktopOrganizer:
                 categories[category] = []
             categories[category].append(item)
         
-        # Position each item
+        # Position each item using adaptive grid positioning
         positioned_count = 0
         for category, items in categories.items():
             self.logger.debug(f"Positioning {len(items)} items in category: {category}")
             
             for index, item in enumerate(items):
-                x, y = self.calculate_grid_position(category, index)
+                x, y = self.calculate_adaptive_grid_position(category, index)
                 
                 # For now, we'll use a simplified approach since finding icons by name is complex
                 # In practice, you'd need to implement proper icon enumeration
@@ -548,9 +603,19 @@ class DesktopOrganizer:
         if not item_path.exists():
             self.logger.warning(f"Source item no longer exists: {item_path.name}")
             return False
-            
+        
         destination_folder = self.user_desktop_path / category
         destination_path = destination_folder / item_path.name
+        
+        # Prevent moving a folder into itself (recursive move)
+        if item_path.is_dir() and destination_path.is_relative_to(item_path):
+            self.logger.warning(f"Cannot move folder {item_path.name} into itself")
+            return False
+        
+        # Skip if item is already in the correct location
+        if item_path.parent == destination_folder:
+            self.logger.debug(f"Item {item_path.name} is already in the correct location")
+            return True
         
         # Handle name conflicts
         if destination_path.exists():

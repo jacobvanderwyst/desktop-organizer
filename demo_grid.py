@@ -13,6 +13,18 @@ def demo_grid_positions():
     organizer = DesktopOrganizer()
     organizer.config["grid_layout"]["enabled"] = True
     
+    # Initialize positioner to get monitor info
+    try:
+        from desktop_organizer import WindowsDesktopPositioner
+        organizer.positioner = WindowsDesktopPositioner()
+        monitor_width, monitor_height = organizer.positioner.get_monitor_info()
+        usable_area = organizer.positioner.get_usable_desktop_area()
+        print(f"Monitor Resolution: {monitor_width}x{monitor_height}")
+        print(f"Usable Desktop Area: {usable_area[2]}x{usable_area[3]} (excluding taskbar)")
+    except Exception as e:
+        print(f"Could not get monitor info: {e}")
+        monitor_width, monitor_height = 1920, 1080  # Fallback
+    
     # Sample items for demonstration
     sample_items = {
         "Gaming Tools": ["OBS Studio", "TrackIR", "Stream Deck", "Discord", "Gyazo"],
@@ -24,11 +36,15 @@ def demo_grid_positions():
         "Computer System": ["NVIDIA App", "Logitech G HUB"]
     }
     
-    print("Grid Layout Positioning Demo")
+    print("Adaptive Grid Layout Positioning Demo")
     print("=" * 50)
-    print(f"Grid Size: {organizer.config['grid_layout']['grid_size']['width']}x{organizer.config['grid_layout']['grid_size']['height']}")
-    print(f"Start Position: ({organizer.config['grid_layout']['start_position']['x']}, {organizer.config['grid_layout']['start_position']['y']})")
-    print(f"Max Columns: {organizer.config['grid_layout']['max_columns']}")
+    if organizer.positioner:
+        print(f"Adaptive positioning based on {monitor_width}x{monitor_height} resolution")
+    else:
+        print("Using static grid configuration")
+        print(f"Grid Size: {organizer.config['grid_layout']['grid_size']['width']}x{organizer.config['grid_layout']['grid_size']['height']}")
+        print(f"Start Position: ({organizer.config['grid_layout']['start_position']['x']}, {organizer.config['grid_layout']['start_position']['y']})")
+        print(f"Max Columns: {organizer.config['grid_layout']['max_columns']}")
     print()
     
     for category, items in sample_items.items():
@@ -36,7 +52,11 @@ def demo_grid_positions():
         print("-" * (len(category) + 1))
         
         for index, item in enumerate(items):
-            x, y = organizer.calculate_grid_position(category, index)
+            if organizer.positioner:
+                x, y = organizer.calculate_adaptive_grid_position(category, index)
+            else:
+                # Fallback to basic positioning if no positioner
+                x, y = (50 + index * 100, 50)
             print(f"  {item:<20} -> ({x:>3}, {y:>3})")
         
         print()
@@ -49,7 +69,10 @@ def demo_grid_positions():
     grid_visual = {}
     for category, items in sample_items.items():
         for index, item in enumerate(items):
-            x, y = organizer.calculate_grid_position(category, index)
+            if organizer.positioner:
+                x, y = organizer.calculate_adaptive_grid_position(category, index)
+            else:
+                x, y = (50 + index * 100, 50)
             # Normalize to grid cells for display
             grid_x = x // 100
             grid_y = y // 100
