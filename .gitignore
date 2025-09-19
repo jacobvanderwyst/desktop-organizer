@@ -4,6 +4,7 @@ desktop_organizer.log
 
 # Backup directories
 backups/
+fixes/
 
 # Python
 __pycache__/
